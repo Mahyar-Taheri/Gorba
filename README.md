@@ -1,0 +1,2 @@
+# Gorba
+Discord bot

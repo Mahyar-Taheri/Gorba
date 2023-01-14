@@ -199,5 +199,5 @@ def GET (table, column, value):
         SELECT * FROM {table} WHERE {column} = {value}
     """).fetchall()[0]
     
-# UPDATE("Players", "Player", 697346776469864519, "Money", 1400000000000)
+# UPDATE("Items", "ItemId", 7, "Title", "Katana")
 # DROP("Inventories")

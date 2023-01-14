@@ -6,7 +6,9 @@ from utilities import convert, INSERT_MEMBER, INSERT_MEMBERS, INSERT_PLAYERS, IN
 from economy import ework, insert_job, remove_job, insert_item, remove_item, buy_item, balance, money
 
 with open("info.json") as file :
-    TOKEN = json.load(file).get("TOKEN")
+    json_file = json.load(file)
+    TOKEN = json_file.get("TOKEN")
+    admins = json_file.get("admins")
     
 connection = sqlite3.connect("data/database.db")
 cursor = connection.cursor()
@@ -16,8 +18,12 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='m!', intents=discord.Intents.all())
 
 def is_admin(ctx):
-        if ctx.message.author.id == 664127746896822292: return True
+        if ctx.message.author.id in admins: return True
         return False
+        
+
+def remove_mention (id):
+    return int(id[2:-1])
         
 # *********************************************#
 #                         colors                             #
@@ -55,6 +61,7 @@ async def make_database(ctx):
                     Level    INT    DEFAULT 1 ,
                     Player    INT    NOT NULL ,
                     Worked INT DEFAULT 0 ,
+                    ActiveWeapon INT DEFAULT 0 ,
                     FOREIGN KEY    (MemberID)    REFERENCES Persons(MemberID) ,
                     FOREIGN KEY (JobID)    REFERENCES Persons(JobID) ,
                     PRIMARY KEY (PlayerID)
@@ -130,6 +137,22 @@ async def admin_players(ctx):
     else:
         await ctx.message.channel.send("You must be an ADMIN to use this command")
 
+
+@bot.command()
+async def add_admin(ctx, id):
+    if is_admin(ctx):
+        id = int(id[2:-1])
+        with open('info.json', 'r+') as f:
+            data = json.load(f)
+            data['admins'].append(id) # <--- add `id` value.
+            f.seek(0)        # <--- should reset file position to the beginning.
+            json.dump(data, f, indent=4)
+            f.truncate() 
+        await ctx.message.channel.send(
+            "DONE"
+        )
+    else:
+        await ctx.message.channel.send("You must be an ADMIN to use this command")
     
 
 @bot.command()
@@ -316,8 +339,10 @@ async def work_error(ctx, error):
         await ctx.send(embed=em)
         
 @bot.command()
-async def profile(ctx):
+async def profile(ctx, person="1"):
     id = ctx.message.author.id
+    if person != "1" :
+        id = remove_mention(person)
     player = GET("Players", "Player", id)
     member = GET("Members", "Member", id)
     job = GET("Jobs", "JobID", player[2])
@@ -416,6 +441,9 @@ async def buy (ctx, item_id=None):
 @bot.command()
 async def transfer (ctx, amount, to_user):
     amount = int(amount)
+    if amount < 0 :
+        amount = - amount
+        print(amount)
     id = int(to_user[2:-1])
     print(id)
     author = ctx.message.author.id
@@ -442,13 +470,28 @@ async def transfer (ctx, amount, to_user):
         """, color=success
     ))
 
-@commands.cooldown(1, 3600, commands.BucketType.user)
+@commands.cooldown(1, 1, commands.BucketType.user)
 @bot.command()
 async def rob (ctx, id):
+    channel = ctx.message.channel
     id = int(id[2:-1])
+    author = ctx.message.author.id
+    if id == author :
+        await channel.send(f"""
+            **Are you trying to rob YOURSELF?**
+        """)
+        return 0
+    if balance(id) < 500 :
+        await  channel.send(f"""
+            **This player has less than 500 dabloons** \n **You shouldn't rob the poor :(**
+        """)
+        return 0
+        # TODO finish this shit ps:add activate item / deactivate item
+    
+    
 
 @work.error
-async def work_error(ctx, error):
+async def rob_error(ctx, error):
     if isinstance(error, commands.CommandOnCooldown):
         em = discord.Embed(title=f"You are in cooldown",description=f"Try again in {convert(error.retry_after)}", color=discord.Color.red())
         await ctx.send(embed=em)

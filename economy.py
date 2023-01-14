@@ -20,6 +20,9 @@ def insert_item(title, level, price, attack, defend):
 def remove_item(title):
     DELETE(table="Items", column="Title", value=title)
 
+
+def player_exists(id):
+    return GET("Players", "Player", id)
     
 def ework(memberID):
     player = cursor.execute(f"""
@@ -48,6 +51,7 @@ def ework(memberID):
     
     if worked // 10 >= level :
         level += 1
+        UPDATE("Players", "Player", memberID, "Level", level)
         new_job = cursor.execute(f"""
             SELECT * FROM Jobs WHERE Level = {level}
         """).fetchall()[0]
@@ -88,3 +92,8 @@ def buy_item(id, item_id):
     else:
         print("not enough money")
         return [400, money,item[1], price]
+        
+
+def balance(id):
+    player = GET("Players", "Player", id)
+    return player[3]

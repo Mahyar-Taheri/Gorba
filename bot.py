@@ -3,7 +3,7 @@ import json
 import discord
 from discord.ext import commands
 from utilities import convert, INSERT_MEMBER, INSERT_MEMBERS, INSERT_PLAYERS, INSERT_INVENTORIES, SELECT,  DROP,  GET,  UPDATE
-from economy import ework, insert_job, remove_job, insert_item, remove_item, buy_item
+from economy import ework, insert_job, remove_job, insert_item, remove_item, buy_item, balance, money
 
 with open("info.json") as file :
     TOKEN = json.load(file).get("TOKEN")
@@ -18,6 +18,12 @@ bot = commands.Bot(command_prefix='m!', intents=discord.Intents.all())
 def is_admin(ctx):
         if ctx.message.author.id == 664127746896822292: return True
         return False
+        
+# *********************************************#
+#                         colors                             #
+# *********************************************#
+
+success, fail = 0x4bb543, 0xFA113D
 
 
 # *********************************************#
@@ -318,10 +324,10 @@ async def profile(ctx):
     name , jobtitle, money, level, worked = member[2], job[1], player[3], player[4], player[6]
     
     msg = discord.Embed(title=f"""
-        Your Profile :page_facing_up:
+        Your Profile
     """,
     description=f"""
-        **Id : {id}**
+        **Id : {id}  :page_facing_up:**
         **Name : {name} :identification_card: **
         **Job : {jobtitle} :oncoming_automobile: **
         **Money : {money} :coin: **
@@ -395,7 +401,7 @@ async def buy (ctx, item_id=None):
         elif result[0] == 400 :
             msg = discord.Embed(
                 title=f"""
-                    Fail Not enough money :x:
+                    Transaction Failed Not enough money :x:
                 """,
                 description=f""" 
                     ** Item : {result[2]} **
@@ -405,6 +411,47 @@ async def buy (ctx, item_id=None):
                 color=0xFA113D
             )
         await ctx.message.channel.send(embed=msg)
+
+
+@bot.command()
+async def transfer (ctx, amount, to_user):
+    amount = int(amount)
+    id = int(to_user[2:-1])
+    print(id)
+    author = ctx.message.author.id
+    print(author)
+    if balance(author) < amount :
+        await ctx.message.channel.send(embed = discord.Embed(
+            title=f"""
+                Transfer Failed :x:
+            """,
+            description=f"""
+                **Not Enough Money**
+            """, color=fail
+        ))
+        return 0
+    money(False, author, amount)
+    money(True, id, amount)
+    await ctx.message.channel.send(embed = discord.Embed(
+        title=f"""
+            Transfer Successful :white_check_mark:
+        """,
+        description=f"""
+            **Your balance : {balance(author)} :euro: **
+            **Clients balance : {balance(id)} :pound: **
+        """, color=success
+    ))
+
+@commands.cooldown(1, 3600, commands.BucketType.user)
+@bot.command()
+async def rob (ctx, id):
+    id = int(id[2:-1])
+
+@work.error
+async def work_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        em = discord.Embed(title=f"You are in cooldown",description=f"Try again in {convert(error.retry_after)}", color=discord.Color.red())
+        await ctx.send(embed=em)
 
 
 bot.run(TOKEN)

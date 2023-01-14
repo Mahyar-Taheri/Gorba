@@ -76,7 +76,11 @@ async def make_database(ctx):
             INSERT_PLAYERS()
         except :
             print("nope")
-        INSERT_INVENTORIES()
+        try:
+            INSERT_INVENTORIES()
+        except :
+            print("nope")
+        
         await ctx.message.channel.send("DATA BASE CREATED")
     else:
         await ctx.message.channel.send("You must be an ADMIN to use this command")
@@ -88,6 +92,15 @@ async def drop_database(ctx):
         DROP("Members")
         DROP("Players")
         DROP("Inventories")
+        await ctx.message.reply("DATABASE DELETED")
+    else:
+        await ctx.message.channel.send("You must be an ADMIN to use this command")
+        
+        
+@bot.command()
+async def drop(ctx, table):
+    if is_admin(ctx):
+        DROP(table)
         await ctx.message.reply("DATABASE DELETED")
     else:
         await ctx.message.channel.send("You must be an ADMIN to use this command")
@@ -270,9 +283,9 @@ async def work(ctx):
     money = data[0][3]
     worked = data[2]
     msg = discord.Embed(title="کونتون پاره شد", description=f"""
-        پول شما : {money} :moneybag: 
-        شغل : {job} :oncoming_automobile: 
-        انقدر کار کردین : {worked} :pick: 
+        **پول شما : {money} :moneybag: **
+        **شغل : {job} :oncoming_automobile: **
+        **انقدر کار کردین : {worked} :pick: **
     """, color=0x7692FF)
     print("here")
     await ctx.message.channel.send(embed = msg)
@@ -308,12 +321,12 @@ async def profile(ctx):
         Your Profile :page_facing_up:
     """,
     description=f"""
-        Id : {id}
-        Name : {name} :identification_card: 
-        Job : {jobtitle} :oncoming_automobile: 
-        Money : {money} :coin: 
-        Level : {level} :straight_ruler: 
-        You have worked {worked} times :pick: 
+        **Id : {id}**
+        **Name : {name} :identification_card: **
+        **Job : {jobtitle} :oncoming_automobile: **
+        **Money : {money} :coin: **
+        **Level : {level} :straight_ruler: **
+        **You have worked {worked} times :pick: **
     """, color=0x2EC4B6
     )
     
@@ -336,12 +349,12 @@ async def items(ctx):
     desc = """"""
     for data in sorted :
         desc += f"""
-            Item Id : {data["id"]}
-                - Name : {data["title"]}
-                - Level : {data["level"]}
-                - Price : {data["price"]}
-                - Attack : {data["attack"]}
-                - Defend : {data["defend"]}
+            **Item Id : {data["id"]}**
+                **- Name : {data["title"]}**
+                **- Level : {data["level"]}**
+                **- Price : {data["price"]}**
+                **- Attack : {data["attack"]}**
+                **- Defend : {data["defend"]}**
                 
         """
     desc += f"""
@@ -363,9 +376,35 @@ async def items(ctx):
 
 
 @bot.command()
-async def buy (ctx, item_id):
-    buy_item(ctx.message.author.id, item_id)
-        
+async def buy (ctx, item_id=None):
+    if item_id is None:
+        await ctx.message.reply(f"""**You need to pass an item id in order to buy an item ( run m!items to get item ids )**""")
+    else:
+        result = buy_item(ctx.message.author.id, item_id)
+        if  result[0] == 200:
+            msg = discord.Embed(
+                title=f"""
+                    Success Item bought :white_check_mark:
+                """,
+                description=f"""
+                    ** Item : {result[2]} **
+                    ** Account balance : {result[1]} **
+                """,
+                color=0x4bb543
+            )
+        elif result[0] == 400 :
+            msg = discord.Embed(
+                title=f"""
+                    Fail Not enough money :x:
+                """,
+                description=f""" 
+                    ** Item : {result[2]} **
+                    ** Price : {result[3]} **
+                    ** Account balance : {result[1]} **
+                """,
+                color=0xFA113D
+            )
+        await ctx.message.channel.send(embed=msg)
 
 
 bot.run(TOKEN)

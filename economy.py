@@ -1,5 +1,6 @@
 from utilities import DELETE, INSERT_INTO, UPDATE, GET
 import sqlite3
+import json
 
 connection = sqlite3.connect("data/database.db")
 cursor = connection.cursor()
@@ -70,7 +71,7 @@ def money(do, id, amount):
     
 
 def buy_item(id, item_id):
-    item_id = int(item)
+    item_id = int(item_id)
     player = GET("Players", "Player", id)
     money = player[3]
     item = GET("Items", "ItemID", item_id)
@@ -79,7 +80,11 @@ def buy_item(id, item_id):
     bag = inventory[-1]    
     if money >= price :
         print("bought")
-        
-        
+        bag = json.loads(bag)
+        bag.append(item[0])
+        UPDATE("Inventories", "Inventory", id, "Bag", f"""{bag}""")
+        UPDATE("Players", "Player", id, "Money", money - price)
+        return [200, money - price, item[1]]
     else:
         print("not enough money")
+        return [400, money,item[1], price]
